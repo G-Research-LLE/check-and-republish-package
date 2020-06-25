@@ -1,0 +1,10 @@
+{
+    "client_payload": {
+        "pat": "8b6eed35c83cf7d715067a5f436c5772e6d8b5bc",
+        "workflow_name": "CI",
+        "job_name": "job",
+        "run_number": 1,
+        "package_name": "GR.example.DotNetLib",
+        "package_version": "1.0.0"
+    }
+}
