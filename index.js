@@ -7,17 +7,6 @@ function sleep(ms) {
 
 (async () => {
     try {
-        // `who-to-greet` input defined in action metadata file
-        const nameToGreet = core.getInput('who-to-greet');
-        console.log(`Hello ${nameToGreet}!`);
-        console.log('source-owner = ' + core.getInput('source-owner'));
-        console.log('source-repo = ' + core.getInput('source-repo'));
-        const time = (new Date()).toTimeString();
-        core.setOutput("time", time);
-        // Get the JSON webhook payload for the event that triggered the workflow
-        const payload = JSON.stringify(github.context.payload, undefined, 2)
-        console.log(`The event payload: ${payload}`);
-
         const sourceOwner = core.getInput('source-owner');
         const sourceRepo = core.getInput('source-repo');
 
@@ -31,17 +20,32 @@ function sleep(ms) {
 
         const octokit = github.getOctokit(pat);
         
+        console.log('Looking for workflow named ' + workflowName + ' in ' + sourceOwner + '/' + sourceRepo);
         const {data: {workflows}} = await octokit.actions.listRepoWorkflows({owner: sourceOwner, repo: sourceRepo});
         const workflow = workflows.find(workflow => workflow.name == workflowName);
-        console.log(workflow);
+        if (!workflow) {
+            core.setFailed('Failed to find workflow ' + workflowName + ' in ' + sourceOwner + '/' + sourceRepo);
+            return;
+        }
+        console.log('Found workflow with id ' + workflow.id);
         
+        console.log('Looking for run number ' + runNumber + ' of that workflow');
         const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id});
         const workflowRun = workflowRuns.find(workflowRun => workflowRun.run_number == runNumber);
-        console.log(workflowRun);
+        if (!workflowRun) {
+            core.setFailed('Failed to find run number ' + runNumber + ' of workflow ' + workflowName + ' in ' + sourceOwner + '/' + sourceRepo);
+            return;
+        }
+        console.log('Found workflow run with id ' + workflowRun.id + ' and status ' + workflowRun.status + ', ' + workflowRun.conclusion);
         
+        console.log('Looking for job named ' + jobName + ' in that workflow run');
         const {data: {jobs}} = await octokit.actions.listJobsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
         var job = jobs.find(job => job.name == jobName);
-        console.log(job);
+        if (!job) {
+            core.setFailed('Failed to find job named ' + jobName + ' in run number ' + runNumber + ' of workflow ' + workflowName + ' in ' + sourceOwner + '/' + sourceRepo);
+            return;
+        }
+        console.log('Found job with id ' + job.id + ' and status ' + job.status + ', ' + job.conclusion);
 
         while (job.status != 'completed') {
             console.log('Job status is ' + job.status + ', sleeping for 10 seconds to give it a chance to finish')
@@ -50,27 +54,25 @@ function sleep(ms) {
             job = data;
         }
         
-        console.log('Downloading logfrom job');
+        console.log('Downloading log from job');
         const {data: log} = await octokit.actions.downloadJobLogsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, job_id: job.id});
         const logLines = log.split(/\r?\n/)
-        console.log(logLines);
 
-        console.log('Searching log for package publishing events');
+        console.log('Searching log for package-publishing events');
         var packagesPublishedByJob = [];
         for (logLine of logLines) {
-            const matches = logLine.match(/Published package [^ ]+ version [^ ]+/)
-            if (matches != null) {
-                console.log(matches);
+            const match = logLine.match(/--- Published package ([^ ]+) version ([^ ]+) ---/)
+            if (match != null) {
+                const package = {name: match[1], version: match[2]}
+                if (!packagesPublishedByJob.find(p => p.name == package.name && p.version == package.version)) {
+                    console.log('Found ' + [package.name, package.version].join(' '))
+                    packagesPublishedByJob.push(package);
+                }
             }
         }
-
-        //const x = octokit.actions.getWorkflowRun({
-        //    sourceOwner,
-        //    sourceRepo,
-        //    run_id,
-        //  });
-
-
+        if (packagesPublishedByJob.length == 0) {
+            console.log('Found none');
+        }
 
     } catch (error) {
         core.setFailed(error.message);
