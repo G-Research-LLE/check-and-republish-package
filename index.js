@@ -1,5 +1,8 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
+const fs = require('fs').promises;
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -81,6 +84,31 @@ function sleep(ms) {
         if (packagesPublishedByJob.length == 0) {
             console.log('Found none');
         }
+
+        if (!packagesPublishedByJob.find(p => p.name == packageName && p.version == packageVersion)) {
+            core.setFailed('Failed to find a log message from job named ' + jobName + ' in run number ' + runNumber + ' of workflow ' + workflowName +
+                           ' in ' + sourceOwner + '/' + sourceRepo + ' which says it published ' + packageName + ' version ' + packageVersion);
+        }
+
+        await fs.writeFile('nuget.config', `
+        <?xml version="1.0" encoding="utf-8"?>
+        <configuration>
+            <packageSources>
+                <clear />
+                <add key="github" value="https://nuget.pkg.github.com/${sourceOwner}/index.json" />
+            </packageSources>
+            <packageSourceCredentials>
+                <github>
+                    <add key="Username" value="djn24" />
+                    <add key="ClearTextPassword" value="${pat}" />
+                </github>
+            </packageSourceCredentials>
+        </configuration>`);
+        console.log(await exec('cat nuget.config'));
+        console.log(await exec('which dotnet'));
+        console.log(await exec('dotnet new classlib --name TempLib'));
+        console.log(await exec('dotnet add TempLib package ' + packageName + ' --version ' + packageVersion));
+        
 
     } catch (error) {
         core.setFailed(error.message);
