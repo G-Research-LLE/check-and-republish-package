@@ -9,6 +9,7 @@ function sleep(ms) {
     try {
         const sourceOwner = core.getInput('source-owner');
         const sourceRepo = core.getInput('source-repo');
+        const permittedBranches = core.getInput('permitted-branches');
 
         const clientPayload = github.context.payload.client_payload;
         const pat = clientPayload.pat;
@@ -37,6 +38,13 @@ function sleep(ms) {
             return;
         }
         console.log('Found workflow run with id ' + workflowRun.id + ' and status ' + workflowRun.status + ', ' + workflowRun.conclusion);
+
+        if (permittedBranches.includes(workflowRun.head_branch)) {
+            console.log('Workflow run is on branch ' + workflowRun.head_branch + ' which is in the list of permitted branches');
+        } else {
+            core.setFailed('Workflow run is on branch ' + workflowRun.head_branch + ' which is not in the list of permitted branches');
+            return;
+        }
         
         console.log('Looking for job named ' + jobName + ' in that workflow run');
         const {data: {jobs}} = await octokit.actions.listJobsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});

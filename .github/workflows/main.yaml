@@ -11,3 +11,5 @@ jobs:
         with:
           source-owner: djn24
           source-repo: DotNetLib
+          permitted-branches: master
+
