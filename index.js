@@ -20,8 +20,7 @@ function sleep(ms) {
         const jobName = clientPayload.job_name;
         const runNumber = clientPayload.run_number;
         const packageName = clientPayload.package_name;
-        const packageVersion = clientPayload.package_version;
-
+        
         const octokit = github.getOctokit(pat);
         
         console.log('Looking for workflow named ' + workflowName + ' in ' + sourceOwner + '/' + sourceRepo);
@@ -72,11 +71,11 @@ function sleep(ms) {
         console.log('Searching log for package-publishing events');
         var packagesPublishedByJob = [];
         for (logLine of logLines) {
-            const match = logLine.match(/--- Published package ([^ ]+) version ([^ ]+) ---/)
+            const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact ---/)
             if (match != null) {
-                const package = {name: match[1], version: match[2]}
-                if (!packagesPublishedByJob.find(p => p.name == package.name && p.version == package.version)) {
-                    console.log('Found ' + [package.name, package.version].join(' '))
+                const package = {name: match[1]}
+                if (!packagesPublishedByJob.find(p => p.name == package.name)) {
+                    console.log('Found ' + [package.name].join(' '))
                     packagesPublishedByJob.push(package);
                 }
             }
@@ -85,30 +84,44 @@ function sleep(ms) {
             console.log('Found none');
         }
 
-        if (!packagesPublishedByJob.find(p => p.name == packageName && p.version == packageVersion)) {
+        if (!packagesPublishedByJob.find(p => p.name == packageName)) {
             core.setFailed('Failed to find a log message from job named ' + jobName + ' in run number ' + runNumber + ' of workflow ' + workflowName +
-                           ' in ' + sourceOwner + '/' + sourceRepo + ' which says it published ' + packageName + ' version ' + packageVersion);
+                           ' in ' + sourceOwner + '/' + sourceRepo + ' which says it published ' + packageName);
         }
 
-        await fs.writeFile('nuget.config', `
-        <?xml version="1.0" encoding="utf-8"?>
-        <configuration>
-            <packageSources>
-                <clear />
-                <add key="github" value="https://nuget.pkg.github.com/${sourceOwner}/index.json" />
-            </packageSources>
-            <packageSourceCredentials>
-                <github>
-                    <add key="Username" value="djn24" />
-                    <add key="ClearTextPassword" value="${pat}" />
-                </github>
-            </packageSourceCredentials>
-        </configuration>`);
-        console.log(await exec('cat nuget.config'));
-        console.log(await exec('which dotnet'));
-        console.log(await exec('dotnet new classlib --name TempLib'));
-        console.log(await exec('dotnet add TempLib package ' + packageName + ' --version ' + packageVersion));
-        
+        console.log('Looking for artifact with name ' + packageName);
+        const {data: {artifacts: artifacts}} = await octokit.actions.listWorkflowRunArtifacts({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
+        const artifact = artifacts.find(artifact => artifact.name == packageName);
+        if (!artifact) {
+            core.setFailed('Failed to find artifact named ' + packageName + ' in artifacts of run number ' + runNumber + ' of workflow ' + workflowName + ' in ' + sourceOwner + '/' + sourceRepo);
+            return;
+        }
+        console.log('Found artifact with id ' + artifact.id + ' and size ' + artifact.size_in_bytes + ' bytes');
+
+        const {data: artifactBytes} = await octokit.actions.downloadArtifact({owner: sourceOwner, repo: sourceRepo, artifact_id: artifact.id, archive_format: 'zip'});
+        console.log(artifactBytes);
+        await fs.writeFile(packageName + '.zip', Buffer.from(artifactBytes));
+        console.log(await exec('ls -l'));
+        console.log(await exec('unzip ' + packageName + '.zip'));
+        console.log(await exec('ls -l'));
+        console.log(await exec('sha256sum ' + packageName));
+        console.log(await exec('unzip ' + packageName));
+        console.log(await exec('ls -l'));
+
+        console.log(await exec('cat djn24.DotNetLib.nuspec'));
+
+        console.log(process.env);
+
+        const lines = (await fs.readFile('djn24.DotNetLib.nuspec')).toString('utf-8').split('\n');
+        console.log(lines);
+        for (let i = 0; i < lines.length; i++) {
+            lines[i] = lines[i].replace(/repository url="[^"]*"/, 'repository url="https://github.com/' + process.env['GITHUB_REPOSITORY'] + '"');
+        } 
+        console.log(lines);
+
+        await fs.writeFile('djn24.DotNetLib.nuspec', lines.join('\n'));
+
+        console.log(await exec('cat djn24.DotNetLib.nuspec'));
 
     } catch (error) {
         core.setFailed(error.message);
