@@ -8,6 +8,52 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function uploadNugetPackage(packageName) {
+    console.log('Unpacking NuGet package');
+    await exec('unzip ' + packageName + ' -d extracted_nupkg');
+
+    const filesInPackage = await fs.readdir('extracted_nupkg');
+    const nuspecFilename = filesInPackage.find(filename => filename.endsWith('nuspec'));
+    if (!nuspecFilename) {
+        core.setFailed('Couldn\'t find .nuspec file in NuGet package');
+        return;
+    }
+    
+    console.log('Updating ' + nuspecFilename + ' to reference this repository (required for GitHub package upload to succeed)');
+    const lines = (await fs.readFile('extracted_nupkg/' + nuspecFilename)).toString('utf-8').split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        const newLine = lines[i].replace(/repository url="[^"]*"/, 'repository url="https://github.com/' + process.env['GITHUB_REPOSITORY'] + '"');
+        if (newLine != lines[i]) {
+            console.log(lines[i] + ' -> ' + newLine.trim());
+            lines[i] = newLine;
+        } else {
+            console.log(lines[i]);
+        }
+    } 
+    await fs.writeFile('extracted_nupkg/' + nuspecFilename, lines.join('\n'));
+
+    console.log('Repacking NuGet package');
+    await exec('zip -j ' + packageName + ' extracted_nupkg/' + nuspecFilename);
+    
+    owner = process.env['GITHUB_REPOSITORY'].split('/')[0];
+
+    console.log('Uploading NuGet package to https://github.com/' + owner);
+    await fs.writeFile('nuget.config', `
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <packageSources>
+        <clear />
+        <add key="github" value="https://nuget.pkg.github.com/${owner}/index.json" />
+    </packageSources>
+    <packageSourceCredentials>
+        <github>
+            <add key="ClearTextPassword" value="${process.env['GITHUB_TOKEN']}" />
+        </github>
+    </packageSourceCredentials>
+</configuration>`);
+    console.log(await exec('dotnet nuget push ' + packageName + ' --source "github"'));
+}
+
 (async () => {
     try {
         const sourceOwner = core.getInput('source-owner');
@@ -98,31 +144,27 @@ function sleep(ms) {
         }
         console.log('Found artifact with id ' + artifact.id + ' and size ' + artifact.size_in_bytes + ' bytes');
 
+        console.log('Downloading ' + packageName + '.zip');
         const {data: artifactBytes} = await octokit.actions.downloadArtifact({owner: sourceOwner, repo: sourceRepo, artifact_id: artifact.id, archive_format: 'zip'});
-        console.log(artifactBytes);
         await fs.writeFile(packageName + '.zip', Buffer.from(artifactBytes));
-        console.log(await exec('ls -l'));
-        console.log(await exec('unzip ' + packageName + '.zip'));
-        console.log(await exec('ls -l'));
-        console.log(await exec('sha256sum ' + packageName));
-        console.log(await exec('unzip ' + packageName));
-        console.log(await exec('ls -l'));
 
-        console.log(await exec('cat djn24.DotNetLib.nuspec'));
+        console.log('Unzipping ' + packageName + '.zip');
+        await exec('unzip ' + packageName + '.zip');
+        
+        console.log('Checking SHA256 of ' + packageName);
+        const {stdout} = await exec('sha256sum ' + packageName);
+        sha256 = stdout.slice(0, 64);
+        console.log('SHA256 is ' + sha256);
 
-        console.log(process.env);
+        // TO DO should check SHA256 against log message
 
-        const lines = (await fs.readFile('djn24.DotNetLib.nuspec')).toString('utf-8').split('\n');
-        console.log(lines);
-        for (let i = 0; i < lines.length; i++) {
-            lines[i] = lines[i].replace(/repository url="[^"]*"/, 'repository url="https://github.com/' + process.env['GITHUB_REPOSITORY'] + '"');
-        } 
-        console.log(lines);
+        console.log('ALL CHECKS SATISFIED, PACKAGE IS OK TO UPLOAD');
 
-        await fs.writeFile('djn24.DotNetLib.nuspec', lines.join('\n'));
-
-        console.log(await exec('cat djn24.DotNetLib.nuspec'));
-
+        if (packageName.endsWith('.nupkg')) {
+            await uploadNugetPackage(packageName);
+        } else {
+            core.setFailed('Currently only NuGet packages are supported');
+        }
     } catch (error) {
         core.setFailed(error.message);
     }
