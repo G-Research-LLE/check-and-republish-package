@@ -9,7 +9,7 @@ function sleep(ms) {
 }
 
 async function uploadNugetPackage(packageName) {
-    console.log('Unpacking NuGet package');
+    /*console.log('Unpacking NuGet package');
     await exec('unzip ' + packageName + ' -d extracted_nupkg');
 
     const filesInPackage = await fs.readdir('extracted_nupkg');
@@ -41,7 +41,7 @@ async function uploadNugetPackage(packageName) {
     console.log('wrote');
 
     console.log('Repacking NuGet package');
-    await exec('zip -j ' + packageName + ' extracted_nupkg/' + nuspecFilename);
+    await exec('zip -j ' + packageName + ' extracted_nupkg/' + nuspecFilename);*/
     
     owner = process.env['GITHUB_REPOSITORY'].split('/')[0];
 
