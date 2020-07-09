@@ -12,4 +12,4 @@ jobs:
           source-owner: djn24
           source-repo: DotNetLib
           permitted-branches: master
-
+          package-push-token: Can't test package push locally anyway

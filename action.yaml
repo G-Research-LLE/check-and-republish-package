@@ -11,6 +11,9 @@ inputs:
     description: 'A list of branches known to be sufficiently protected that artifacts built from them may be republished'
     required: true
     default: 'master'
+  package-push-token:
+    description: 'A GitHub auth token which has access to upload packages to the repo where the action is running'
+    required: true
 runs:
   using: 'node12'
   main: 'index.js'
