@@ -8,7 +8,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function uploadNugetPackage(packageName) {
+async function uploadNugetPackage(packageName, pat) {
     /*console.log('Unpacking NuGet package');
     await exec('unzip ' + packageName + ' -d extracted_nupkg');
 
@@ -57,7 +57,7 @@ async function uploadNugetPackage(packageName) {
     <packageSourceCredentials>
         <github>
             <add key="Username" value="${owner}" />
-            <add key="ClearTextPassword" value="${process.env['ACTIONS_RUNTIME_TOKEN']}" />
+            <add key="ClearTextPassword" value="${pat}" />
         </github>
     </packageSourceCredentials>
 </configuration>`);
@@ -175,7 +175,7 @@ async function uploadNugetPackage(packageName) {
         console.log('ALL CHECKS SATISFIED, PACKAGE IS OK TO UPLOAD');
 
         if (packageName.endsWith('.nupkg')) {
-            await uploadNugetPackage(packageName);
+            await uploadNugetPackage(packageName, pat);
         } else {
             core.setFailed('Currently only NuGet packages are supported');
         }
