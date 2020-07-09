@@ -65,7 +65,8 @@ async function uploadNugetPackage(packageName) {
     console.log(await exec('cat nuget.config'));
     console.log(await exec('which dotnet'));
     console.log(await exec('dotnet nuget --help'));
-    console.log(await exec('dotnet nuget push ' + packageName + ' --source "github"'));
+    console.log(await exec('dotnet nuget list'));
+    //console.log(await exec('dotnet nuget push ' + packageName + ' --source "github"'));
 }
 
 (async () => {
