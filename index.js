@@ -48,8 +48,7 @@ async function uploadNugetPackage(packageName) {
     console.log(process.env);
 
     console.log('Uploading NuGet package to https://github.com/' + owner);
-    await fs.writeFile('nuget.config', `
-<?xml version="1.0" encoding="utf-8"?>
+    await fs.writeFile('nuget.config', `<?xml version="1.0" encoding="utf-8"?>
 <configuration>
     <packageSources>
         <clear />
