@@ -22,6 +22,7 @@ async function uploadNugetPackage(packageName) {
     console.log('Updating ' + nuspecFilename + ' to reference this repository (required for GitHub package upload to succeed)');
     console.log(await exec('ls -la'));
     console.log(await exec('whoami'));
+    console.log(await exec('ls -la extracted_nupkg'));
     const lines = (await fs.readFile('extracted_nupkg/' + nuspecFilename)).toString('utf-8').split('\n');
     console.log('read');
     for (let i = 0; i < lines.length; i++) {
