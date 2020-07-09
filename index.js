@@ -55,6 +55,7 @@ async function uploadNugetPackage(packageName) {
     </packageSources>
     <packageSourceCredentials>
         <github>
+            <add key="Username" value="${owner}" />
             <add key="ClearTextPassword" value="${process.env['GITHUB_TOKEN']}" />
         </github>
     </packageSourceCredentials>
