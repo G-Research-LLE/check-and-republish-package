@@ -1,13 +1,16 @@
 name: 'Hello World'
 description: 'Greet someone and record the time'
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
+  source-owner:
+    description: 'The GitHub owner (organisation or individual) of the repo to receive artifacts from'
     required: true
-    default: 'World'
-outputs:
-  time: # id of output
-    description: 'The time we greeted you'
+  source-repo:
+    description: 'The repo (owned by source-owner) to receive artifacts from'
+    required: true
+  permitted-branches:
+    description: 'A list of branches known to be sufficiently protected that artifacts built from them may be republished'
+    required: true
+    default: 'master'
 runs:
   using: 'node12'
   main: 'index.js'
