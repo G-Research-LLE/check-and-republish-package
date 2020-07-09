@@ -45,6 +45,8 @@ async function uploadNugetPackage(packageName) {
     
     owner = process.env['GITHUB_REPOSITORY'].split('/')[0];
 
+    console.log(process.env);
+
     console.log('Uploading NuGet package to https://github.com/' + owner);
     await fs.writeFile('nuget.config', `
 <?xml version="1.0" encoding="utf-8"?>
