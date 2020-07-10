@@ -137,11 +137,11 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             if (match1 != null) {
                 console.log("MATCH1 MATCHED");
             };
-            const match2 = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact (SHA256 .*) ---/)
+            const match2 = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256 .*\) ---/)
             if (match2 != null) {
                 console.log("MATCH2 MATCHED");
             };
-            const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact (SHA256: ([^ ]+)) ---/)
+            const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256: ([^ ]+)\) ---/)
             if (match != null) {
                 console.log("MATCH MATCHED");
                 const package = {name: match[1], sha: match[2]}
