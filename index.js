@@ -132,11 +132,11 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         console.log('Searching log for package-publishing events');
         var packagesPublishedByJob = [];
         for (logLine of logLines) {
-            const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact ---/)
+            const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256: ([^ ]+)\)---/)
             if (match != null) {
-                const package = {name: match[1]}
+                const package = {name: match[1], sha: match[2]}
                 if (!packagesPublishedByJob.find(p => p.name == package.name)) {
-                    console.log('Found ' + [package.name].join(' '))
+                    console.log('Found ' + [package.name, package.sha].join(', '))
                     packagesPublishedByJob.push(package);
                 }
             }
@@ -148,6 +148,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         if (!packagesPublishedByJob.find(p => p.name == packageName)) {
             core.setFailed('Failed to find a log message from job named "' + jobName + '" in run number ' + runNumber + ' of workflow "' + workflowName +
                            '" in ' + sourceOwner + '/' + sourceRepo + ' which says it published ' + packageName);
+            return;
         }
 
         console.log('Looking for artifact with name ' + packageName);
