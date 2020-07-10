@@ -132,7 +132,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         console.log('Searching log for package-publishing events');
         var packagesPublishedByJob = [];
         for (logLine of logLines) {
-            const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256: ([^ ]+)\)---/)
+            const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact (SHA256: ([^ ]+))---/)
             if (match != null) {
                 const package = {name: match[1], sha: match[2]}
                 if (!packagesPublishedByJob.find(p => p.name == package.name)) {
