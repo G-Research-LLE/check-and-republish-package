@@ -1,0 +1,5 @@
+curl -H "Accept: application/vnd.github.everest-preview+json" \
+     -H "Authorization: token lkjdflksjdflkjsdlfjk" \
+     --request POST \
+     --data '{"event_type": "check_and_republish_package", "client_payload": {"source_token": "<PAT with read access to source repo>", "workflow_name": "Build and publish NuGet package", "job_name": "job", "run_number": 7, "package_name": "GR.Example.DotNetCoreClassLib.1.0.0.nupkg"}}' \
+     https://api.github.com/repos/G-Research-LLE/example-dotnet-core-classlib-publisher/dispatches

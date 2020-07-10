@@ -76,13 +76,13 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         const packagePushToken = core.getInput('package-push-token');
 
         const clientPayload = github.context.payload.client_payload;
-        const pat = clientPayload.pat;
+        const sourceToken = clientPayload.sourceToken;
         const workflowName = clientPayload.workflow_name;
         const jobName = clientPayload.job_name;
         const runNumber = clientPayload.run_number;
         const packageName = clientPayload.package_name;
         
-        const octokit = github.getOctokit(pat);
+        const octokit = github.getOctokit(sourceToken);
         
         console.log('Looking for workflow named "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
         const {data: {workflows}} = await octokit.actions.listRepoWorkflows({owner: sourceOwner, repo: sourceRepo});

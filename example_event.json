@@ -1,6 +1,6 @@
 {
     "client_payload": {
-        "pat": "<A PAT which has read access to the source repo, to check workflow runs and download artifacts - don't check it in!>",
+        "source_token": "<A PAT which has read access to the source repo, to check workflow runs and download artifacts - don't check it in!>",
         "workflow_name": "Build and publish NuGet package",
         "job_name": "job",
         "run_number": 5,
