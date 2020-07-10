@@ -76,7 +76,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         const packagePushToken = core.getInput('package-push-token');
 
         const clientPayload = github.context.payload.client_payload;
-        const sourceToken = clientPayload.sourceToken;
+        const sourceToken = clientPayload.source_token;
         const workflowName = clientPayload.workflow_name;
         const jobName = clientPayload.job_name;
         const runNumber = clientPayload.run_number;
