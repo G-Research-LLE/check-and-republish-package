@@ -151,15 +151,16 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
         console.log('Unzipping ' + packageName + '.zip');
         await exec('unzip ' + packageName + '.zip');
-
-        console.log(await exec('ls -la'));
         
         console.log('Checking SHA256 of ' + packageName);
         const {stdout} = await exec('sha256sum ' + packageName);
         sha256 = stdout.slice(0, 64);
         console.log('SHA256 is ' + sha256);
 
-        // TO DO should check SHA256 against log message
+        if (!packagesPublishedByJob.find(p => p.name == packageName && p.sha == sha256)) {
+            core.setFailed('SHA256 does not match any seen in log messages');
+            return;
+        }
 
         console.log('ALL CHECKS SATISFIED, PACKAGE IS OK TO UPLOAD');
 
