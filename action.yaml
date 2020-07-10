@@ -8,7 +8,7 @@ inputs:
     description: 'The repo (owned by source-owner) to receive artifacts from'
     required: true
   permitted-branches:
-    description: 'A list of branches known to be sufficiently protected that artifacts built from them may be republished'
+    description: 'A comma-separated list of branches known to be sufficiently protected that artifacts built from them may be republished'
     required: true
     default: 'master'
   package-push-token:

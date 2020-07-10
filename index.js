@@ -57,7 +57,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
     try {
         const sourceOwner = core.getInput('source-owner');
         const sourceRepo = core.getInput('source-repo');
-        const permittedBranches = core.getInput('permitted-branches');
+        const permittedBranches = core.getInput('permitted-branches').split(',').map(b => b.trim());
         const packagePushToken = core.getInput('package-push-token');
 
         const clientPayload = github.context.payload.client_payload;
