@@ -20,13 +20,8 @@ async function uploadNugetPackage(packageName, packagePushToken) {
     }
     
     console.log('Updating ' + nuspecFilename + ' to reference this repository (required for GitHub package upload to succeed)');
-    console.log(await exec('ls -la'));
-    console.log(await exec('whoami'));
-    console.log(await exec('ls -la extracted_nupkg'));
     await exec('chmod 700 extracted_nupkg/' + nuspecFilename);
-    console.log(await exec('ls -la extracted_nupkg'));
     const lines = (await fs.readFile('extracted_nupkg/' + nuspecFilename)).toString('utf-8').split('\n');
-    console.log('read');
     for (let i = 0; i < lines.length; i++) {
         const newLine = lines[i].replace(/repository url="[^"]*"/, 'repository url="https://github.com/' + process.env['GITHUB_REPOSITORY'] + '"');
         if (newLine != lines[i]) {
@@ -36,16 +31,10 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             console.log(lines[i]);
         }
     }
-    console.log('about to write');
     await fs.writeFile('extracted_nupkg/' + nuspecFilename, lines.join('\n'));
-    console.log('wrote');
-
-    console.log('Repacking NuGet package');
     await exec('zip -j ' + packageName + ' extracted_nupkg/' + nuspecFilename);
     
     owner = process.env['GITHUB_REPOSITORY'].split('/')[0];
-
-    console.log(process.env);
 
     console.log('Uploading NuGet package to https://github.com/' + owner);
     await fs.writeFile('nuget.config', `<?xml version="1.0" encoding="utf-8"?>
@@ -61,11 +50,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         </github>
     </packageSourceCredentials>
 </configuration>`);
-    console.log(await exec('cat nuget.config'));
-    console.log(await exec('which dotnet'));
-    console.log(await exec('dotnet nuget --help'));
-    console.log(await exec('dotnet nuget list'));
-    console.log(await exec('dotnet nuget push ' + packageName + ' --source "github"'));
+    await exec('dotnet nuget push ' + packageName + ' --source "github"');
 }
 
 (async () => {
