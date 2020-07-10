@@ -132,18 +132,8 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         console.log('Searching log for package-publishing events');
         var packagesPublishedByJob = [];
         for (logLine of logLines) {
-            console.log(logLine);
-            const match1 = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact .* ---/)
-            if (match1 != null) {
-                console.log("MATCH1 MATCHED");
-            };
-            const match2 = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256 .*\) ---/)
-            if (match2 != null) {
-                console.log("MATCH2 MATCHED");
-            };
             const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256: ([^ ]+)\) ---/)
             if (match != null) {
-                console.log("MATCH MATCHED");
                 const package = {name: match[1], sha: match[2]}
                 if (!packagesPublishedByJob.find(p => p.name == package.name)) {
                     console.log('Found ' + [package.name, package.sha].join(', '))
@@ -176,6 +166,8 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
         console.log('Unzipping ' + packageName + '.zip');
         await exec('unzip ' + packageName + '.zip');
+
+        console.log(await exec('ls -la'));
         
         console.log('Checking SHA256 of ' + packageName);
         const {stdout} = await exec('sha256sum ' + packageName);
