@@ -1,8 +1,7 @@
 name: Test action
 
-on:
-  repository_dispatch:
-    types: [check_and_republish_package]
+#on:
+#  push
 
 jobs:
   job:
