@@ -1,46 +1,27 @@
 # check-and-republish-package
 
+GitHub action which checks that a GitHub Artifact produced by a workflow in another repo came from one of a named list of trusted branches. If so, it uploads the contents of the Artifact as a GitHub Package.
+The workflow in the other repository is expected to use [G-Research-LLE/request-republish-package](https://github.com/G-Research-LLE/request-republish-package).
 
-# check-and-republish-package
+## Why?
 
-This action checks that a package associated with a different repo to the one with the workflow that's running the action has been built from
-master, and republishes the package associaed with this repo if so.
-
-## Inputs
-
-### `who-to-greet`
-
-**Required** The name of the person to greet. Default `"World"`.
-
-## Outputs
-
-### `time`
-
-The time we greeted you.
+This action (combined with [G-Research-LLE/request-republish-package](https://github.com/G-Research-LLE/request-republish-package) and some carefully crafted permissions)
+can be used to ensure that all of the GitHub packages on a GitHub org have been built from protected branches. This is useful where the packages are to be relied upon in a
+secure environment. For further details see SDR-816 in G-Research internal JIRA.
 
 ## Example usage
 
-uses: actions/hello-world-javascript-action@v1
-with:
-  who-to-greet: 'Mona the Octocat'
+See [action.yml](action.yml).
 
-## Testing locally
+```yaml
+- uses: G-Research-LLE/check-and-republish-package@v1
+  with:
+    source-owner: G-Research-LLE
+    source-repo: example-dotnet-core-classlib
+    permitted-branches: master
+    package-push-token: ${{secrets.PACKAGE_PUSH_TOKEN}}
+```
 
-Install act:
+## License
 
-curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
-
-Update example_event.json for the case you want to test (be careful not to check in a currently-valid GitHub PAT).
-
-act --eventpath example_event.json
-
-### To move docker location and run with more complete image
-
-sudo systemctl stop docker
-sudo mv /var/lib/docker /ephemeral/docker
-sudo ln -s /ephemeral/docker /var/lib/
-sudo systemctl start docker
-
-act --eventpath example_event.json -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
-
-(Wait while it download an 18 GB docker image - that's why you moved the docker location to ephemeral)
+TBC.

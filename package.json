@@ -1,7 +1,7 @@
 {
   "name": "check-and-republish-package",
   "version": "1.0.0",
-  "description": "GitHub action which checks a package has been built from master and republishes it if so.",
+  "description": "GitHub action which checks that a GitHub Artifact produced by a workflow in another repo came from one of a named list of trusted branches. If so, it uploads the contents of the Artifact as a GitHub Package.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

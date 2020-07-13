@@ -1,18 +1,18 @@
-name: 'Hello World'
-description: 'Greet someone and record the time'
+name: 'check-and-republish-package'
+description: 'Checks that a GitHub Artifact produced by a workflow in another repo came from one of a named list of trusted branches. If so, uploads the contents of the Artifact as a GitHub Package'
 inputs:
   source-owner:
-    description: 'The GitHub owner (organisation or individual) of the repo to receive artifacts from'
+    description: 'The GitHub owner (organisation or individual) of the repo to accept artifacts from'
     required: true
   source-repo:
-    description: 'The repo (owned by source-owner) to receive artifacts from'
+    description: 'The repo (owned by source-owner) to accept artifacts from'
     required: true
   permitted-branches:
     description: 'A comma-separated list of branches known to be sufficiently protected that artifacts built from them may be republished'
     required: true
     default: 'master'
   package-push-token:
-    description: 'A GitHub auth token which has access to upload packages to the repo where the action is running'
+    description: 'A GitHub auth token which has access to upload packages to the repo where this action is running'
     required: true
 runs:
   using: 'node12'
