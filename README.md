@@ -11,7 +11,7 @@ secure environment. For further details see SDR-816 in G-Research internal JIRA.
 
 ## Example usage
 
-See [action.yml](action.yml).
+See [action.yaml](action.yaml).
 
 ```yaml
 - uses: G-Research-LLE/check-and-republish-package@v1
