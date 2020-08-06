@@ -90,7 +90,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         //const response = await octokit.repos.getBranchProtection({owner: sourceOwner, repo: sourceRepo, branch: 'master'});
         const response = await octokit.repos.listBranches({owner: sourceOwner, repo: sourceRepo, protected: true});
         console.log(response);
-        const {data: {collaborators}} = await octokit.repos.listCollaborators({owner: sourceOwner, repo: sourceRepo});
+        const {data: collaborators} = await octokit.repos.listCollaborators({owner: sourceOwner, repo: sourceRepo});
         collaborators.forEach(function (collaborator) {
             console.log(collaborator.login);
             console.log(collaborator.permissions);
