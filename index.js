@@ -87,8 +87,10 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         }
         console.log('Found workflow run with id ' + workflowRun.id + ' and status ' + workflowRun.status + ', ' + workflowRun.conclusion);
 
-        const response = await octokit.repos.getBranchProtection({owner: sourceOwner, repo: sourceRepo, branch: 'master'});
-        //const response = await octokit.repos.listBranches({owner: sourceOwner, repo: sourceRepo, protected: true});
+        //const response = await octokit.repos.getBranchProtection({owner: sourceOwner, repo: sourceRepo, branch: 'master'});
+        const response = await octokit.repos.listBranches({owner: sourceOwner, repo: sourceRepo, protected: true});
+        console.log(response);
+        const response = await octokit.repos.listCollaborators({owner: sourceOwner, repo: sourceRepo});
         console.log(response);
 
         if (permittedBranches.includes(workflowRun.head_branch)) {
