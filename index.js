@@ -90,8 +90,8 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         //const response = await octokit.repos.getBranchProtection({owner: sourceOwner, repo: sourceRepo, branch: 'master'});
         const response = await octokit.repos.listBranches({owner: sourceOwner, repo: sourceRepo, protected: true});
         console.log(response);
-        const response = await octokit.repos.listCollaborators({owner: sourceOwner, repo: sourceRepo});
-        console.log(response);
+        const response2 = await octokit.repos.listCollaborators({owner: sourceOwner, repo: sourceRepo});
+        console.log(response2);
 
         if (permittedBranches.includes(workflowRun.head_branch)) {
             console.log('Workflow run is on branch ' + workflowRun.head_branch + ' which is in the list of permitted branches');
