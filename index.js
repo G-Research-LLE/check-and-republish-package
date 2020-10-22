@@ -65,7 +65,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
         const octokit = github.getOctokit(sourceToken);
 
-        for (sourceRepoWorkflowBranch in sourceRepoWorkflowBranches) {
+        for (sourceRepoWorkflowBranch of sourceRepoWorkflowBranches) {
             console.log(sourceRepoWorkflowBranch);
             const parts = sourceRepoWorkflowBranch.split('/');
             if (parts.length != 3) {
