@@ -60,18 +60,15 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         const permittedBranches = core.getInput('permitted-branches').split(',').map(b => b.trim());
         const packagePushToken = core.getInput('package-push-token');
 
-        const clientPayload = github.context.payload.client_payload;
-        const sourceToken = clientPayload.source_token;
-        const workflowName = clientPayload.workflow_name;
-        const jobName = clientPayload.job_name;
-        const runNumber = clientPayload.run_number;
-        const packageName = clientPayload.package_name;
-        
         const octokit = github.getOctokit(sourceToken);
         
-        console.log('Looking for workflow named "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
+        console.log('Looking for recent workflows in "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
         const {data: {workflows}} = await octokit.actions.listRepoWorkflows({owner: sourceOwner, repo: sourceRepo});
-        const workflow = workflows.find(workflow => workflow.name == workflowName);
+        for (workflow in workflows) {
+            console.log(workflow);
+        }
+        
+        /*const workflow = workflows.find(workflow => workflow.updated_at);
         if (!workflow) {
             core.setFailed('Failed to find workflow "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
             return;
@@ -177,7 +174,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             await uploadNugetPackage(packageName, packagePushToken);
         } else {
             core.setFailed('Currently only NuGet packages are supported');
-        }
+        }*/
     } catch (error) {
         core.setFailed(error.message);
     }
