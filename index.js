@@ -57,12 +57,16 @@ async function uploadNugetPackage(packageName, packagePushToken) {
     try {
         const sourceOwner = core.getInput('source-owner');
         const sourceRepoWorkflowBranches = core.getInput('source-repo-workflow-branches').split(',').map(b => b.trim());
+
+        console.log(sourceRepoWorkflowBranches);
+
         const sourceToken = core.getInput('source-token');
         const packagePushToken = core.getInput('package-push-token');
 
         const octokit = github.getOctokit(sourceToken);
 
         for (sourceRepoWorkflowBranch in sourceRepoWorkflowBranches) {
+            console.log(sourceRepoWorkflowBranch);
             const parts = sourceRepoWorkflowBranch.split('/');
             if (parts.length != 3) {
                 core.setFailed('source-repo-workflow-branches should be a comma-separated list of repo/workflow/branch: Found ' + sourceRepoWorkflowBranch);
