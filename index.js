@@ -121,9 +121,9 @@ async function uploadNugetPackage(packageName, packagePushToken) {
                             continue;
                         }
                         const {data: artifactBytes} = await octokit.actions.downloadArtifact({owner: sourceOwner, repo: sourceRepo, artifact_id: artifact.id, archive_format: 'zip'});
-                        await fs.writeFile(packageName + '.zip', Buffer.from(artifactBytes));
-                        await exec('unzip ' + packageName + '.zip');
-                        const {stdout} = await exec('sha256sum ' + packageName);
+                        await fs.writeFile(package.name + '.zip', Buffer.from(artifactBytes));
+                        await exec('unzip ' + package.name + '.zip');
+                        const {stdout} = await exec('sha256sum ' + package.name);
                         const sha256 = stdout.slice(0, 64);
                         if (package.sha != sha256) {
                             core.setFailed(package.name + '[' + package.sha + ']: Found artifact with non-matching SHA256 ' + sha256);
