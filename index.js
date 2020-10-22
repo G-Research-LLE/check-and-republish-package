@@ -91,6 +91,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
             for (workflowRun of recentWorkflowRuns) {
                 console.log('Checking workflow run number ' + workflowRun.run_number + ' (updated at ' + workflowRun.updated_at + ')');
+                const {data: {artifacts: artifacts}} = await octokit.actions.listWorkflowRunArtifacts({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
                 const {data: {jobs}} = await octokit.actions.listJobsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
                 for (job of jobs) {
                     if (job.status != 'completed') {
@@ -111,56 +112,30 @@ async function uploadNugetPackage(packageName, packagePushToken) {
                             }
                         }
                     }
-                    console.log(job.name + ': ' + job.status + ', published ' + packagesPublishedByJob.length + ' packages:');
+                    console.log(job.name + ': ' + job.status + ', published ' + packagesPublishedByJob.length + ' package(s):');
+                    
+                    for (package of packagesPublishedByJob) {
+                        const artifact = artifacts.find(artifact => artifact.name == package.name);
+                        if (!artifact) {
+                            core.setFailed(package.name + '[' + package.sha + ']: No artifact with that name uploaded by workflow run');
+                            continue;
+                        }
+                        const {data: artifactBytes} = await octokit.actions.downloadArtifact({owner: sourceOwner, repo: sourceRepo, artifact_id: artifact.id, archive_format: 'zip'});
+                        await fs.writeFile(packageName + '.zip', Buffer.from(artifactBytes));
+                        await exec('unzip ' + packageName + '.zip');
+                        const {stdout} = await exec('sha256sum ' + packageName);
+                        const sha256 = stdout.slice(0, 64);
+                        if (package.sha != sha256) {
+                            core.setFailed(package.name + '[' + package.sha + ']: Found artifact with non-matching SHA256 ' + sha256);
+                            continue;
+                        }
+                        console.log(package.name + '[' + package.sha + ']: Downloaded artifact, SHA256 matches');
+                    }
                 }
             }
         }
         
         /*
-        
-        
-        
-        console.log('Looking for job named "' + jobName + '" in that workflow run');
-        const {data: {jobs}} = await octokit.actions.listJobsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
-        var job = jobs.find(job => job.name == jobName);
-        if (!job) {
-            core.setFailed('Failed to find job named "' + jobName + '" in run number ' + runNumber + ' of workflow "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
-            return;
-        }
-        console.log('Found job with id ' + job.id + ' and status ' + job.status + ', ' + job.conclusion);
-
-        while (job.status != 'completed') {
-            console.log('Job status is ' + job.status + ', sleeping for 10 seconds to give it a chance to finish')
-            await sleep(10000);
-            const {data} = await octokit.actions.getJobForWorkflowRun({owner: sourceOwner, repo: sourceRepo, job_id: job.id});
-            job = data;
-        }
-        
-        console.log('Downloading log from job');
-        const {data: log} = await octokit.actions.downloadJobLogsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, job_id: job.id});
-        const logLines = log.split(/\r?\n/)
-
-        console.log('Searching log for package-publishing events');
-        var packagesPublishedByJob = [];
-        for (logLine of logLines) {
-            const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256: ([^ ]+)\) ---/)
-            if (match != null) {
-                const package = {name: match[1], sha: match[2]}
-                if (!packagesPublishedByJob.find(p => p.name == package.name)) {
-                    console.log('Found ' + [package.name, package.sha].join(', '))
-                    packagesPublishedByJob.push(package);
-                }
-            }
-        }
-        if (packagesPublishedByJob.length == 0) {
-            console.log('Found none');
-        }
-
-        if (!packagesPublishedByJob.find(p => p.name == packageName)) {
-            core.setFailed('Failed to find a log message from job named "' + jobName + '" in run number ' + runNumber + ' of workflow "' + workflowName +
-                           '" in ' + sourceOwner + '/' + sourceRepo + ' which says it published ' + packageName);
-            return;
-        }
 
         console.log('Looking for artifact with name ' + packageName);
         const {data: {artifacts: artifacts}} = await octokit.actions.listWorkflowRunArtifacts({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
