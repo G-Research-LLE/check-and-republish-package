@@ -86,8 +86,8 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             for (workflowRun of workflowRuns) {
                 print(workflowRun);
             }
-            const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id, branch: permittedBranch});
-            for (workflowRun of workflowRuns) {
+            const {data: {workflow_runs: workflowRuns2}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id, branch: permittedBranch});
+            for (workflowRun of workflowRuns2) {
                 print(workflowRun);
             }
         }
