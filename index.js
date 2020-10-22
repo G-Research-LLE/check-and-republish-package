@@ -92,25 +92,27 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             for (workflowRun of recentWorkflowRuns) {
                 console.log('Checking workflow run number ' + workflowRun.run_number + ' (updated at ' + workflowRun.updated_at + ')');
                 const {data: {jobs}} = await octokit.actions.listJobsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
-                if (job.status != 'completed') {
-                    console.log(job.name + ': ' + job.status);
-                    continue;
-                }
-                
-                const {data: log} = await octokit.actions.downloadJobLogsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, job_id: job.id});
-                const logLines = log.split(/\r?\n/)
+                for (job of jobs) {
+                    if (job.status != 'completed') {
+                        console.log(job.name + ': ' + job.status);
+                        continue;
+                    }
+                    
+                    const {data: log} = await octokit.actions.downloadJobLogsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, job_id: job.id});
+                    const logLines = log.split(/\r?\n/)
 
-                var packagesPublishedByJob = [];
-                for (logLine of logLines) {
-                    const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256: ([^ ]+)\) ---/)
-                    if (match != null) {
-                        const package = {name: match[1], sha: match[2]}
-                        if (!packagesPublishedByJob.find(p => p.name == package.name)) {
-                            packagesPublishedByJob.push(package);
+                    var packagesPublishedByJob = [];
+                    for (logLine of logLines) {
+                        const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256: ([^ ]+)\) ---/)
+                        if (match != null) {
+                            const package = {name: match[1], sha: match[2]}
+                            if (!packagesPublishedByJob.find(p => p.name == package.name)) {
+                                packagesPublishedByJob.push(package);
+                            }
                         }
                     }
+                    console.log(job.name + ': ' + job.status + ', published ' + packagesPublishedByJob.length + ' packages:');
                 }
-                console.log(job.name + ': ' + job.status + ', published ' + packagesPublishedByJob.length + ' packages');
             }
         }
         
