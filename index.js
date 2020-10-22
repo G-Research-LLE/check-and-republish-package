@@ -82,7 +82,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
         await setUpNuget(packagePushToken);
 
-        const {repository: {packages} } = await graphql(
+        const {repository: {packages: {nodes: packages}} } = await graphql(
             `
               {
                 repository(owner: "G-Research-LLE", name: "example-dotnet-core-classlib-publisher") {
