@@ -66,7 +66,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             const parts = sourceRepoWorkflowBranch.split('/');
             if (parts.length != 3) {
                 core.setFailed('source-repo-workflow-branches should be a comma-separated list of repo/workflow/branch: Found ' + sourceRepoWorkflowBranch);
-                return;
+                continue;
             }
             const sourceRepo = parts[0];
             const workflowName = parts[1];
@@ -74,17 +74,25 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
             console.log('Looking for recent workflows named "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
             const {data: {workflows}} = await octokit.actions.listRepoWorkflows({owner: sourceOwner, repo: sourceRepo});
-            for (workflow of workflows) {
-                console.log(workflow);
+            const workflow = workflows.find(workflow => workflow.name == workflowName);
+            if (!workflow) {
+                core.setFailed('Failed to find workflow "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
+                continue;
+            }
+            console.log('Found workflow with id ' + workflow.id);
+
+            console.log('Looking for recent runs of that workflow on branch ' + permittedBranch);
+            const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id});
+            for (workflowRun of workflowRuns) {
+                print(workflowRun);
+            }
+            const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id, branch: permittedBranch});
+            for (workflowRun of workflowRuns) {
+                print(workflowRun);
             }
         }
         
-        /*const workflow = workflows.find(workflow => workflow.updated_at);
-        if (!workflow) {
-            core.setFailed('Failed to find workflow "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
-            return;
-        }
-        console.log('Found workflow with id ' + workflow.id);
+        /*
         
         console.log('Looking for run number ' + runNumber + ' of that workflow');
         const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id});
