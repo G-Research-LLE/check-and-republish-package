@@ -72,7 +72,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             const workflowName = parts[1];
             const permittedBranch = parts[2];
 
-            console.log('Looking for recent workflows named "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
+            console.log('Looking for workflows named "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
             const {data: {workflows}} = await octokit.actions.listRepoWorkflows({owner: sourceOwner, repo: sourceRepo});
             const workflow = workflows.find(workflow => workflow.name == workflowName);
             if (!workflow) {
@@ -82,13 +82,11 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             console.log('Found workflow with id ' + workflow.id);
 
             console.log('Looking for recent runs of that workflow on branch ' + permittedBranch);
-            const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id});
+            const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id, branch: permittedBranch});
             for (workflowRun of workflowRuns) {
                 console.log(workflowRun);
-            }
-            const {data: {workflow_runs: workflowRuns2}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id, branch: permittedBranch});
-            for (workflowRun of workflowRuns2) {
-                console.log(workflowRun);
+                const date = new Date(workflowRun.updated_at);
+                console.log(date);
             }
         }
         
