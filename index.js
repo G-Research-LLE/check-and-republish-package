@@ -1,11 +1,29 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
+const graphql = require('@octokit/graphql');
 const fs = require('fs').promises;
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function setUpNuget(packagePushToken) {
+    const owner = process.env['GITHUB_REPOSITORY'].split('/')[0];
+    await fs.writeFile('nuget.config', `<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <packageSources>
+        <clear />
+        <add key="github" value="https://nuget.pkg.github.com/${owner}/index.json" />
+    </packageSources>
+    <packageSourceCredentials>
+        <github>
+            <add key="Username" value="${owner}" />
+            <add key="ClearTextPassword" value="${packagePushToken}" />
+        </github>
+    </packageSourceCredentials>
+</configuration>`);
 }
 
 async function uploadNugetPackage(packageName, packagePushToken) {
@@ -61,6 +79,30 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         const packagePushToken = core.getInput('package-push-token');
 
         const octokit = github.getOctokit(sourceToken);
+
+        await setUpNuget(packagePushToken);
+
+        const { repository } = await graphql(
+            `
+              {
+                repository(owner: "octokit", name: "graphql.js") {
+                  issues(last: 3) {
+                    edges {
+                      node {
+                        title
+                      }
+                    }
+                  }
+                }
+              }
+            `,
+            {
+              headers: {
+                authorization: 'token ' + packagePushToken,
+              },
+            }
+          );
+        console.log(repository);
 
         var thresholdDate = new Date();
         thresholdDate.setHours(thresholdDate.getHours() - 1);
@@ -129,7 +171,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
                             core.setFailed(package.name + '[' + package.sha + ']: Found artifact with non-matching SHA256 ' + sha256);
                             continue;
                         }
-                        console.log(package.name + '[' + package.sha + ']: Downloaded artifact, SHA256 matches');
+                        console.log(package.name + ' [' + package.sha + ']: Downloaded artifact, SHA256 matches');
                     }
                 }
             }
