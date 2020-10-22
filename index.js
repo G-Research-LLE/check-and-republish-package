@@ -85,12 +85,11 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         const { repository } = await graphql(
             `
               {
-                repository(owner: "octokit", name: "graphql.js") {
-                  issues(last: 3) {
-                    edges {
-                      node {
-                        title
-                      }
+                repository(owner: "G-Research-LLE", name: "example-dotnet-core-classlib-publisher") {
+                  packages(first: 100) {
+                    nodes {
+                      name,
+                      packageType
                     }
                   }
                 }
