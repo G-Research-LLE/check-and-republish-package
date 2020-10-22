@@ -89,7 +89,12 @@ async function uploadNugetPackage(packageName, packagePushToken) {
                   packages(first: 100) {
                     nodes {
                       name,
-                      packageType
+                      packageType,
+                      versions(first: 100) {
+                        nodes {
+                            version
+                        }
+                      }
                     }
                   }
                 }
