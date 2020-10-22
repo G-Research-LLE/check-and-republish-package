@@ -107,12 +107,15 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             }
           );
         console.log(packageNodes);
+        var existingPackages = [];
         for (packageNode of packageNodes) {
             for (versionNode of packageNode.versions.nodes) {
-                console.log(packageNode.name + ' ' + versionNode);
-                console.log(versionNode);
+                if (packageNode.packageType == 'NUGET') {
+                    existingPackages.push(packageNode.name + '.' + versionNode.version + '.nuget');
+                }
             }
         }
+        console.log(existingPackages);
 
         var thresholdDate = new Date();
         thresholdDate.setHours(thresholdDate.getHours() - 1);
