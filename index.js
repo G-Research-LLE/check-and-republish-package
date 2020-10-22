@@ -56,17 +56,27 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 (async () => {
     try {
         const sourceOwner = core.getInput('source-owner');
-        const sourceRepo = core.getInput('source-repo');
+        const sourceRepoWorkflowBranches = core.getInput('source-repo-workflow-branches').split(',').map(b => b.trim());
         const sourceToken = core.getInput('source-token');
-        const permittedBranches = core.getInput('permitted-branches').split(',').map(b => b.trim());
         const packagePushToken = core.getInput('package-push-token');
 
         const octokit = github.getOctokit(sourceToken);
-        
-        console.log('Looking for recent workflows in "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
-        const {data: {workflows}} = await octokit.actions.listRepoWorkflows({owner: sourceOwner, repo: sourceRepo});
-        for (workflow in workflows) {
-            console.log(workflow);
+
+        for (sourceRepoWorkflowBranch in sourceRepoWorkflowBranches) {
+            const parts = sourceRepoWorkflowBranch.split('/');
+            if (parts.length != 3) {
+                core.setFailed('source-repo-workflow-branches should be a comma-separated list of repo/workflow/branch: Found ' + sourceRepoWorkflowBranch);
+                return;
+            }
+            const sourceRepo = parts[0];
+            const workflowName = parts[1];
+            const permittedBranch = parts[2];
+
+            console.log('Looking for recent workflows named "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
+            const {data: {workflows}} = await octokit.actions.listRepoWorkflows({owner: sourceOwner, repo: sourceRepo});
+            for (workflow in workflows) {
+                console.log(workflow);
+            }
         }
         
         /*const workflow = workflows.find(workflow => workflow.updated_at);

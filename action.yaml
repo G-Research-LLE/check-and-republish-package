@@ -4,13 +4,12 @@ inputs:
   source-owner:
     description: 'The GitHub owner (organisation or individual) of the repo to accept artifacts from'
     required: true
-  source-repo:
-    description: 'The repo (owned by source-owner) to accept artifacts from'
+  source-repo-workflow-branches:
+    description: 'A comma-separated list of repo/workflow/branch combinations to search for artifacts'
     required: true
-  permitted-branches:
-    description: 'A comma-separated list of branches known to be sufficiently protected that artifacts built from them may be republished'
+  source-token:
+    description: 'A GitHub auth token which has access to read workflow information, including logs and artifacts, from the source owner and repo(s)'
     required: true
-    default: 'master'
   package-push-token:
     description: 'A GitHub auth token which has access to upload packages to the repo where this action is running'
     required: true
