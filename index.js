@@ -86,44 +86,37 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
             console.log('Looking for runs of that workflow on branch ' + permittedBranch + ' updated after ' + thresholdDate.toISOString());
             const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id, branch: permittedBranch});
-            for (workflowRun of workflowRuns) {
-                console.log(workflowRun);
-                const date = new Date(workflowRun.updated_at);
-                console.log(date);
-                if (date.getTime() > thresholdDate.getTime()) {
-                    console.log("YES");
-                } else {
-                    console.log("NO");
+            const recentWorkflowRuns = workflowRuns.filter(workflowRun => new Date(workflowRun.updated_at).getTime() > thresholdDate.getTime());
+            console.log('Found ' + recentWorkflowRuns.length + ' workflow runs');
+
+            for (workflowRun of recentWorkflowRuns) {
+                console.log('Checking workflow run number ' + workflowRun.run_number + ' (updated at ' + workflowRun.updated_at + ')');
+                const {data: {jobs}} = await octokit.actions.listJobsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
+                if (job.status != 'completed') {
+                    console.log(job.name + ': ' + job.status);
+                    continue;
                 }
+                
+                const {data: log} = await octokit.actions.downloadJobLogsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, job_id: job.id});
+                const logLines = log.split(/\r?\n/)
+
+                var packagesPublishedByJob = [];
+                for (logLine of logLines) {
+                    const match = logLine.match(/--- Uploaded package ([^ ]+) as a GitHub artifact \(SHA256: ([^ ]+)\) ---/)
+                    if (match != null) {
+                        const package = {name: match[1], sha: match[2]}
+                        if (!packagesPublishedByJob.find(p => p.name == package.name)) {
+                            packagesPublishedByJob.push(package);
+                        }
+                    }
+                }
+                console.log(job.name + ': ' + job.status + ', published ' + packagesPublishedByJob.length + ' packages');
             }
         }
         
         /*
         
-        console.log('Looking for run number ' + runNumber + ' of that workflow');
-        const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id});
-        const workflowRun = workflowRuns.find(workflowRun => workflowRun.run_number == runNumber);
-        if (!workflowRun) {
-            core.setFailed('Failed to find run number ' + runNumber + ' of workflow "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
-            return;
-        }
-        console.log('Found workflow run with id ' + workflowRun.id + ' and status ' + workflowRun.status + ', ' + workflowRun.conclusion);
-
-        //const response = await octokit.repos.getBranchProtection({owner: sourceOwner, repo: sourceRepo, branch: 'master'});
-        const response = await octokit.repos.listBranches({owner: sourceOwner, repo: sourceRepo, protected: true});
-        console.log(response);
-        const {data: collaborators} = await octokit.repos.listCollaborators({owner: sourceOwner, repo: sourceRepo});
-        collaborators.forEach(function (collaborator) {
-            console.log(collaborator.login);
-            console.log(collaborator.permissions);
-        });
-
-        if (permittedBranches.includes(workflowRun.head_branch)) {
-            console.log('Workflow run is on branch ' + workflowRun.head_branch + ' which is in the list of permitted branches');
-        } else {
-            core.setFailed('Workflow run is on branch ' + workflowRun.head_branch + ' which is not in the list of permitted branches');
-            return;
-        }
+        
         
         console.log('Looking for job named "' + jobName + '" in that workflow run');
         const {data: {jobs}} = await octokit.actions.listJobsForWorkflowRun({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
