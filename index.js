@@ -82,7 +82,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
         await setUpNuget(packagePushToken);
 
-        const { repository } = await graphql(
+        const {repository: {packages} } = await graphql(
             `
               {
                 repository(owner: "G-Research-LLE", name: "example-dotnet-core-classlib-publisher") {
@@ -101,7 +101,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
               },
             }
           );
-        console.log(repository);
+        console.log(packages);
 
         var thresholdDate = new Date();
         thresholdDate.setHours(thresholdDate.getHours() - 1);
