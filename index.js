@@ -1,6 +1,6 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
-const graphql = require('@octokit/graphql');
+const {graphql} = require('@octokit/graphql');
 const fs = require('fs').promises;
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
