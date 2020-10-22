@@ -62,6 +62,9 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
         const octokit = github.getOctokit(sourceToken);
 
+        var thresholdDate = new Date();
+        thresholdDate.setHours(thresholdDate.getHours() - 1);
+
         for (sourceRepoWorkflowBranch of sourceRepoWorkflowBranches) {
             const parts = sourceRepoWorkflowBranch.split('/');
             if (parts.length != 3) {
@@ -81,12 +84,17 @@ async function uploadNugetPackage(packageName, packagePushToken) {
             }
             console.log('Found workflow with id ' + workflow.id);
 
-            console.log('Looking for recent runs of that workflow on branch ' + permittedBranch);
+            console.log('Looking for runs of that workflow on branch ' + permittedBranch + ' updated after ' + thresholdDate.toISOString());
             const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id, branch: permittedBranch});
             for (workflowRun of workflowRuns) {
                 console.log(workflowRun);
                 const date = new Date(workflowRun.updated_at);
                 console.log(date);
+                if (date.getTime() > thresholdDate.getTime()) {
+                    console.log("YES");
+                } else {
+                    console.log("NO");
+                }
             }
         }
         
