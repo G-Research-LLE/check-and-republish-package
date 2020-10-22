@@ -110,6 +110,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         for (packageNode of packageNodes) {
             for (versionNode of packageNode.versions.nodes) {
                 console.log(packageNode.name + ' ' + versionNode);
+                console.log(versionNode);
             }
         }
 
