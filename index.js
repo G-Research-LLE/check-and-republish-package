@@ -9,24 +9,52 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function setUpNuget(packagePushToken) {
-    const owner = process.env['GITHUB_REPOSITORY'].split('/')[0];
+async function setUpNuget(thisOwner, packagePushToken) {
     await fs.writeFile('nuget.config', `<?xml version="1.0" encoding="utf-8"?>
 <configuration>
     <packageSources>
         <clear />
-        <add key="github" value="https://nuget.pkg.github.com/${owner}/index.json" />
+        <add key="github" value="https://nuget.pkg.github.com/${thisOwner}/index.json" />
     </packageSources>
     <packageSourceCredentials>
         <github>
-            <add key="Username" value="${owner}" />
+            <add key="Username" value="${thisOwner}" />
             <add key="ClearTextPassword" value="${packagePushToken}" />
         </github>
     </packageSourceCredentials>
 </configuration>`);
 }
 
-async function uploadNugetPackage(packageName, packagePushToken) {
+async function getExistingPackages(thisOwner, thisRepo, packagePushToken) {
+    const packagesQuery = `
+    {
+      repository(owner: "${thisOwner}", name: "${thisRepo}") {
+        packages(first: 100) {
+          nodes {
+            name,
+            packageType,
+            versions(first: 100) {
+              nodes {
+                version
+              }
+            }
+          }
+        }
+      }
+    }`
+    const {repository: {packages: {nodes: packageNodes}} } = await graphql(packagesQuery, {headers: {authorization: 'token ' + packagePushToken}});
+    var existingPackages = [];
+    for (packageNode of packageNodes) {
+        for (versionNode of packageNode.versions.nodes) {
+            if (packageNode.packageType == 'NUGET') {
+                existingPackages.push(packageNode.name + '.' + versionNode.version + '.nuget');
+            }
+        }
+    }
+    return existingPackages;
+}
+
+async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
     console.log('Unpacking NuGet package');
     await exec('unzip ' + packageName + ' -d extracted_nupkg');
 
@@ -41,7 +69,7 @@ async function uploadNugetPackage(packageName, packagePushToken) {
     await exec('chmod 700 extracted_nupkg/' + nuspecFilename);
     const lines = (await fs.readFile('extracted_nupkg/' + nuspecFilename)).toString('utf-8').split('\n');
     for (let i = 0; i < lines.length; i++) {
-        const newLine = lines[i].replace(/repository url="[^"]*"/, 'repository url="https://github.com/' + process.env['GITHUB_REPOSITORY'] + '"');
+        const newLine = lines[i].replace(/repository url="[^"]*"/, 'repository url="https://github.com/' + thisOwner + '/' + thisRepo + '"');
         if (newLine != lines[i]) {
             console.log(lines[i] + ' -> ' + newLine.trim());
             lines[i] = newLine;
@@ -51,23 +79,8 @@ async function uploadNugetPackage(packageName, packagePushToken) {
     }
     await fs.writeFile('extracted_nupkg/' + nuspecFilename, lines.join('\n'));
     await exec('zip -j ' + packageName + ' extracted_nupkg/' + nuspecFilename);
-    
-    owner = process.env['GITHUB_REPOSITORY'].split('/')[0];
 
-    console.log('Uploading NuGet package to https://github.com/' + owner);
-    await fs.writeFile('nuget.config', `<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-    <packageSources>
-        <clear />
-        <add key="github" value="https://nuget.pkg.github.com/${owner}/index.json" />
-    </packageSources>
-    <packageSourceCredentials>
-        <github>
-            <add key="Username" value="${owner}" />
-            <add key="ClearTextPassword" value="${packagePushToken}" />
-        </github>
-    </packageSourceCredentials>
-</configuration>`);
+    console.log('Uploading NuGet package to https://github.com/' + thisOwner);
     await exec('dotnet nuget push ' + packageName + ' --source "github"');
 }
 
@@ -77,41 +90,14 @@ async function uploadNugetPackage(packageName, packagePushToken) {
         const sourceRepoWorkflowBranches = core.getInput('source-repo-workflow-branches').split(',').map(b => b.trim());
         const sourceToken = core.getInput('source-token');
         const packagePushToken = core.getInput('package-push-token');
+        const thisOwner = process.env['GITHUB_REPOSITORY'].split('/')[0];
+        const thisRepo = process.env['GITHUB_REPOSITORY'].split('/')[1];
 
         const octokit = github.getOctokit(sourceToken);
 
-        await setUpNuget(packagePushToken);
+        await setUpNuget(thisOwner, packagePushToken);
 
-        const thisOwner = process.env['GITHUB_REPOSITORY'].split('/')[0];
-        const thisRepo = process.env['GITHUB_REPOSITORY'].split('/')[1];
-        const packagesQuery = `
-        {
-          repository(owner: "${thisOwner}", name: "${thisRepo}") {
-            packages(first: 100) {
-              nodes {
-                name,
-                packageType,
-                versions(first: 100) {
-                  nodes {
-                    version
-                  }
-                }
-              }
-            }
-          }
-        }`
-        console.log(packagesQuery);
-        const {repository: {packages: {nodes: packageNodes}} } = await graphql(packagesQuery, {headers: {authorization: 'token ' + packagePushToken}});
-        console.log(packageNodes);
-        var existingPackages = [];
-        for (packageNode of packageNodes) {
-            for (versionNode of packageNode.versions.nodes) {
-                if (packageNode.packageType == 'NUGET') {
-                    existingPackages.push(packageNode.name + '.' + versionNode.version + '.nuget');
-                }
-            }
-        }
-        console.log(existingPackages);
+        const existingPackages = await getExistingPackages(thisOwner, thisRepo, packagePushToken);
 
         var thresholdDate = new Date();
         thresholdDate.setHours(thresholdDate.getHours() - 1);
@@ -166,6 +152,11 @@ async function uploadNugetPackage(packageName, packagePushToken) {
                     console.log(job.name + ': ' + job.status + ', published ' + packagesPublishedByJob.length + ' package(s):');
                     
                     for (package of packagesPublishedByJob) {
+                        if (existingPackages.includes(package.name)) {
+                            console.log(package.name + ' [' + package.sha + ']: Already published');
+                            continue;
+                        }
+
                         const artifact = artifacts.find(artifact => artifact.name == package.name);
                         if (!artifact) {
                             core.setFailed(package.name + '[' + package.sha + ']: No artifact with that name uploaded by workflow run');
@@ -180,47 +171,18 @@ async function uploadNugetPackage(packageName, packagePushToken) {
                             core.setFailed(package.name + '[' + package.sha + ']: Found artifact with non-matching SHA256 ' + sha256);
                             continue;
                         }
-                        console.log(package.name + ' [' + package.sha + ']: Downloaded artifact, SHA256 matches');
+                        if (existingPackages.includes(package.name)) {
+                            console.log(package.name + ' [' + package.sha + ']: Downloaded artifact, SHA256 matches, uploading:');
+                            if (package.name.endsWith('.nupkg')) {
+                                await uploadNugetPackage(package.name, packagePushToken);
+                            } else {
+                                core.setFailed('Currently only Nuget packages are supported');
+                            }
+                        }
                     }
                 }
             }
         }
-        
-        /*
-
-        console.log('Looking for artifact with name ' + packageName);
-        const {data: {artifacts: artifacts}} = await octokit.actions.listWorkflowRunArtifacts({owner: sourceOwner, repo: sourceRepo, run_id: workflowRun.id});
-        const artifact = artifacts.find(artifact => artifact.name == packageName);
-        if (!artifact) {
-            core.setFailed('Failed to find artifact named ' + packageName + ' in artifacts of run number ' + runNumber + ' of workflow "' + workflowName + '" in ' + sourceOwner + '/' + sourceRepo);
-            return;
-        }
-        console.log('Found artifact with id ' + artifact.id + ' and size ' + artifact.size_in_bytes + ' bytes');
-
-        console.log('Downloading ' + packageName + '.zip');
-        const {data: artifactBytes} = await octokit.actions.downloadArtifact({owner: sourceOwner, repo: sourceRepo, artifact_id: artifact.id, archive_format: 'zip'});
-        await fs.writeFile(packageName + '.zip', Buffer.from(artifactBytes));
-
-        console.log('Unzipping ' + packageName + '.zip');
-        await exec('unzip ' + packageName + '.zip');
-        
-        console.log('Checking SHA256 of ' + packageName);
-        const {stdout} = await exec('sha256sum ' + packageName);
-        sha256 = stdout.slice(0, 64);
-        console.log('SHA256 is ' + sha256);
-
-        if (!packagesPublishedByJob.find(p => p.name == packageName && p.sha == sha256)) {
-            core.setFailed('SHA256 does not match any seen in log messages');
-            return;
-        }
-
-        console.log('ALL CHECKS SATISFIED, PACKAGE IS OK TO UPLOAD');
-
-        if (packageName.endsWith('.nupkg')) {
-            await uploadNugetPackage(packageName, packagePushToken);
-        } else {
-            core.setFailed('Currently only NuGet packages are supported');
-        }*/
     } catch (error) {
         core.setFailed(error.message);
     }
