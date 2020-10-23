@@ -183,6 +183,7 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
                 }
             }
         }
+        console.log('Is GitHub just losing the last log message?');
     } catch (error) {
         core.setFailed(error.message);
     }
