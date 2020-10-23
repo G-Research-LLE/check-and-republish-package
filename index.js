@@ -51,6 +51,7 @@ async function getExistingPackages(thisOwner, thisRepo, packagePushToken) {
             }
         }
     }
+    console.log(existingPackages);
     return existingPackages;
 }
 
@@ -152,7 +153,6 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
                     console.log(job.name + ': ' + job.status + ', published ' + packagesPublishedByJob.length + ' package(s):');
                     
                     for (package of packagesPublishedByJob) {
-                        console.log(package.name + ' [' + package.sha + ']: FOO FOO FOO?');
                         if (existingPackages.includes(package.name)) {
                             console.log(package.name + ' [' + package.sha + ']: Already published');
                             continue;
@@ -172,13 +172,12 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
                             core.setFailed(package.name + '[' + package.sha + ']: Found artifact with non-matching SHA256 ' + sha256);
                             continue;
                         }
-                        if (existingPackages.includes(package.name)) {
-                            console.log(package.name + ' [' + package.sha + ']: Downloaded artifact, SHA256 matches, uploading:');
-                            if (package.name.endsWith('.nupkg')) {
-                                await uploadNugetPackage(package.name, packagePushToken);
-                            } else {
-                                core.setFailed('Currently only Nuget packages are supported');
-                            }
+                        
+                        console.log(package.name + ' [' + package.sha + ']: Downloaded artifact, SHA256 matches, uploading:');
+                        if (package.name.endsWith('.nupkg')) {
+                            await uploadNugetPackage(package.name, packagePushToken);
+                        } else {
+                            core.setFailed('Currently only Nuget packages are supported');
                         }
                     }
                 }
