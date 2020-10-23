@@ -56,7 +56,7 @@ async function getExistingPackages(thisOwner, thisRepo, packagePushToken) {
 }
 
 async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
-    console.log('Unpacking NuGet package');
+    console.log('- Unpacking NuGet package');
     await exec('unzip ' + packageName + ' -d extracted_nupkg');
 
     const filesInPackage = await fs.readdir('extracted_nupkg');
@@ -66,22 +66,22 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
         return;
     }
     
-    console.log('Updating ' + nuspecFilename + ' to reference this repository (required for GitHub package upload to succeed)');
+    console.log('- Updating ' + nuspecFilename + ' to reference this repository (required for GitHub package upload to succeed)');
     await exec('chmod 700 extracted_nupkg/' + nuspecFilename);
     const lines = (await fs.readFile('extracted_nupkg/' + nuspecFilename)).toString('utf-8').split('\n');
     for (let i = 0; i < lines.length; i++) {
         const newLine = lines[i].replace(/repository url="[^"]*"/, 'repository url="https://github.com/' + thisOwner + '/' + thisRepo + '"');
         if (newLine != lines[i]) {
-            console.log(lines[i] + ' -> ' + newLine.trim());
+            console.log('- ' + lines[i] + ' -> ' + newLine.trim());
             lines[i] = newLine;
         } else {
-            console.log(lines[i]);
+            console.log('- ' + lines[i]);
         }
     }
     await fs.writeFile('extracted_nupkg/' + nuspecFilename, lines.join('\n'));
     await exec('zip -j ' + packageName + ' extracted_nupkg/' + nuspecFilename);
 
-    console.log('Uploading NuGet package to https://github.com/' + thisOwner);
+    console.log('- Uploading NuGet package to https://github.com/' + thisOwner);
     await exec('dotnet nuget push ' + packageName + ' --source "github"');
 }
 
@@ -125,7 +125,7 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
             console.log('Looking for runs of that workflow on branch ' + permittedBranch + ' updated after ' + thresholdDate.toISOString());
             const {data: {workflow_runs: workflowRuns}} = await octokit.actions.listWorkflowRuns({owner: sourceOwner, repo: sourceRepo, workflow_id: workflow.id, branch: permittedBranch});
             const recentWorkflowRuns = workflowRuns.filter(workflowRun => new Date(workflowRun.updated_at).getTime() > thresholdDate.getTime());
-            console.log('Found ' + recentWorkflowRuns.length + ' workflow runs');
+            console.log('Found ' + recentWorkflowRuns.length + ' workflow run(s)');
 
             for (workflowRun of recentWorkflowRuns) {
                 console.log('Checking workflow run number ' + workflowRun.run_number + ' (updated at ' + workflowRun.updated_at + ')');
@@ -175,7 +175,7 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
                         
                         console.log(package.name + ' [' + package.sha + ']: Downloaded artifact, SHA256 matches, uploading:');
                         if (package.name.endsWith('.nupkg')) {
-                            await uploadNugetPackage(package.name, packagePushToken);
+                            await uploadNugetPackage(thisOwner, thisRepo, package.name);
                         } else {
                             core.setFailed('Currently only Nuget packages are supported');
                         }
