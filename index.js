@@ -82,30 +82,26 @@ async function uploadNugetPackage(packageName, packagePushToken) {
 
         await setUpNuget(packagePushToken);
 
-        const {repository: {packages: {nodes: packageNodes}} } = await graphql(
-            `
-              {
-                repository(owner: "G-Research-LLE", name: "example-dotnet-core-classlib-publisher") {
-                  packages(first: 100) {
-                    nodes {
-                      name,
-                      packageType,
-                      versions(first: 100) {
-                        nodes {
-                            version
-                        }
-                      }
-                    }
+        const thisOwner = process.env['GITHUB_REPOSITORY'].split('/')[0];
+        const thisRepo = process.env['GITHUB_REPOSITORY'].split('/')[1];
+        const packagesQuery = `
+        {
+          repository(owner: "${thisOwner}", name: "${thisRepo}") {
+            packages(first: 100) {
+              nodes {
+                name,
+                packageType,
+                versions(first: 100) {
+                  nodes {
+                    version
                   }
                 }
               }
-            `,
-            {
-              headers: {
-                authorization: 'token ' + packagePushToken,
-              },
             }
-          );
+          }
+        }`
+        console.log(packagesQuery);
+        const {repository: {packages: {nodes: packageNodes}} } = await graphql(packagesQuery, {headers: {authorization: 'token ' + packagePushToken}});
         console.log(packageNodes);
         var existingPackages = [];
         for (packageNode of packageNodes) {
