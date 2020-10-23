@@ -47,11 +47,10 @@ async function getExistingPackages(thisOwner, thisRepo, packagePushToken) {
     for (packageNode of packageNodes) {
         for (versionNode of packageNode.versions.nodes) {
             if (packageNode.packageType == 'NUGET') {
-                existingPackages.push(packageNode.name + '.' + versionNode.version + '.nuget');
+                existingPackages.push(packageNode.name + '.' + versionNode.version + '.nupkg');
             }
         }
     }
-    console.log(existingPackages);
     return existingPackages;
 }
 
@@ -83,6 +82,7 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
 
     console.log('- Uploading NuGet package to https://github.com/' + thisOwner);
     await exec('dotnet nuget push ' + packageName + ' --source "github"');
+    console.log('- Uploaded ' + packageName);
 }
 
 (async () => {
@@ -183,7 +183,6 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
                 }
             }
         }
-        console.log('Is GitHub just losing the last log message?');
     } catch (error) {
         core.setFailed(error.message);
     }
