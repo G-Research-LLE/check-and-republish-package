@@ -152,6 +152,7 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
                     console.log(job.name + ': ' + job.status + ', published ' + packagesPublishedByJob.length + ' package(s):');
                     
                     for (package of packagesPublishedByJob) {
+                        console.log(package.name + ' [' + package.sha + ']: FOO FOO FOO?');
                         if (existingPackages.includes(package.name)) {
                             console.log(package.name + ' [' + package.sha + ']: Already published');
                             continue;
