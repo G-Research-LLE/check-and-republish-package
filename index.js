@@ -29,11 +29,11 @@ async function getExistingPackages(thisOwner, thisRepo, packagePushToken) {
     const packagesQuery = `
     {
       repository(owner: "${thisOwner}", name: "${thisRepo}") {
-        packages(first: 100) {
+        packages {
           nodes {
             name,
             packageType,
-            versions(first: 100) {
+            versions {
               nodes {
                 version
               }
