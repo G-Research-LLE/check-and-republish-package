@@ -154,7 +154,7 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
                     
                     for (package of packagesPublishedByJob) {
                         if (existingPackages.includes(package.name)) {
-                            console.log(package.name + ' [' + package.sha + ']: Already published');
+                            console.log(package.name + ' [' + package.sha + ']: Already republished');
                             continue;
                         }
 
@@ -173,7 +173,7 @@ async function uploadNugetPackage(thisOwner, thisRepo, packageName) {
                             continue;
                         }
                         
-                        console.log(package.name + ' [' + package.sha + ']: Downloaded artifact, SHA256 matches, uploading:');
+                        console.log(package.name + ' [' + package.sha + ']: Downloaded artifact, SHA256 matches, republishing:');
                         if (package.name.endsWith('.nupkg')) {
                             await uploadNugetPackage(thisOwner, thisRepo, package.name);
                         } else {
